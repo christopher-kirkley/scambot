@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import time
 import sys
 import requests
+import json
 
 from config import API_KEY, GOOGLE_API_KEY
 
@@ -24,9 +25,14 @@ def check_url(url):
       ]
     }
     }
-    r = requests.post(f'https://safebrowsing.googleapis.com/v4/threatMatches:find?key={GOOGLE_API_KEY}', data = data)
-    print(r.status_code)
-    return True
+    json_data = json.dumps(data)
+    r = requests.post(f'https://safebrowsing.googleapis.com/v4/threatMatches:find?key={GOOGLE_API_KEY}', data = json_data)
+    response = r.json()
+    if response == {}:
+        return False
+    else:
+        return True
+    return False
 
 def access_url(url, driver):
     driver.get(url)
@@ -49,9 +55,16 @@ def main():
 
     if sys.argv[1]:
         url = sys.argv[1]
-        domain = access_url(url, driver)
-        contact_email = get_abuse_email(domain)
-        print(contact_email)
+        check = check_url(url)
+        if check == True:
+            domain = access_url(url, driver)
+            print(domain)
+            contact_email = get_abuse_email(domain)
+            print(contact_email)
+        else:
+            print("Not verified")
+    
+    driver.close()
 
 
 if __name__ == '__main__':
